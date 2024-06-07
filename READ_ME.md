@@ -31,8 +31,7 @@ Features
 
 ⚫️Installation⚫️
 
-
-To run the Endless Rabbit game on your iOS device or simulator, follow these steps: Clone the repository
+✅Download the project zip folder✅
 
 ⚫️Game Controls⚫️
 
