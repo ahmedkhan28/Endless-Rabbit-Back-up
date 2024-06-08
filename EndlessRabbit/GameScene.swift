@@ -29,11 +29,14 @@ class GameScene: SCNScene, SCNPhysicsContactDelegate {
     var groundNode: SCNNode!
     var objectNode: SCNNode?
     var bunnyNode: SCNNode?
-    var lanes: [Float] = [-1.7, 0, 1.7] //Three Lanes
+    //var lanes: [Float] = [-1.7, 0, 1.7] //Three Lanes
+    var lanes: [Float] = [-1, 1] //Two lanes
     var currentLaneIndex = 1
+    var collectedCarrots: Set<String> = []
     
     var score = 0
     var scoreBinding: Binding<Int>?
+    
     
     weak var gameOverDelegate: GameOverDelegate?
     
@@ -89,7 +92,7 @@ class GameScene: SCNScene, SCNPhysicsContactDelegate {
         groundGeometry.reflectivity = 0.0
         
         groundNode.geometry = groundGeometry
-        groundNode.position = SCNVector3(x: 0, y: -0.1, z: 0)
+        groundNode.position = SCNVector3(x: 0, y: -0.2, z: 0)
         
      
         let groundShape = SCNPhysicsShape(geometry: groundGeometry, options: nil)
@@ -141,6 +144,7 @@ class GameScene: SCNScene, SCNPhysicsContactDelegate {
         physicsWorld.contactDelegate = self
     }
     
+    
     func physicsWorld(_ world: SCNPhysicsWorld, didBegin contact: SCNPhysicsContact) {
         let nodeA = contact.nodeA
         let nodeB = contact.nodeB
@@ -148,10 +152,13 @@ class GameScene: SCNScene, SCNPhysicsContactDelegate {
         if nodeA.physicsBody?.categoryBitMask == CarrotNode.bitMask || nodeB.physicsBody?.categoryBitMask == CarrotNode.bitMask {
             // Bunny collided with a carrot
             let carrotNode = (nodeA.physicsBody?.categoryBitMask == CarrotNode.bitMask) ? nodeA : nodeB
-            carrotNode.removeFromParentNode()
-            playChimpupSound()
-            incrementScore()
             
+            if let carrot = carrotNode as? CarrotNode, !collectedCarrots.contains(carrot.identifier) {
+                collectedCarrots.insert(carrot.identifier)
+                carrotNode.removeFromParentNode()
+                incrementScore()
+                playChimpupSound()
+            }
         } else if nodeA.physicsBody?.categoryBitMask == TreeNode.bitMask || nodeB.physicsBody?.categoryBitMask == TreeNode.bitMask {
             // Bunny collided with a tree
             gameOver()
@@ -181,26 +188,40 @@ class GameScene: SCNScene, SCNPhysicsContactDelegate {
         scoreBinding?.wrappedValue = score
     }
 
+   
     func spawnObject() {
-        let lane = lanes[Int.random(in: 0..<lanes.count)]
+       
+        
+        let laneIndex = Int.random(in: 0..<lanes.count)
+        let lane = lanes[laneIndex]
+
+        // Randomly decide whether to spawn a tree or a carrot
         let objectType = Bool.random() ? "tree" : "carrot"
         
         let objectNode: SCNNode
         
+        // Create the object node based on the type
         if objectType == "tree" {
             objectNode = TreeNode()
         } else {
-            objectNode = CarrotNode()
+            let carrotNode = CarrotNode()
+            objectNode = carrotNode
         }
-        objectNode.position = SCNVector3(x: lane, y: 0, z: cameraNode.position.z - 50)
+
+        
+        let xOffset: Float = 0.66
+        let xPosition = lane == -1 ? lane + xOffset : lane - xOffset
+        objectNode.position = SCNVector3(x: xPosition, y: 0, z: cameraNode.position.z - 40)
+        
         
         DispatchQueue.main.async {
             self.rootNode.addChildNode(objectNode)
         }
         
         self.objectNode = objectNode
-        print("\(objectType.capitalized) spawned")
+        print("\(objectType.capitalized) spawned in lane \(lane)")
     }
+    
     
     func updateScene() {
         if let objectNode = objectNode {
@@ -213,7 +234,6 @@ class GameScene: SCNScene, SCNPhysicsContactDelegate {
         } else {
             spawnObject()
         }
-        
        
         bunnyNode?.position.z = cameraNode.position.z - 9
     }
@@ -227,7 +247,7 @@ class GameScene: SCNScene, SCNPhysicsContactDelegate {
         print("Camera movement started")
     }
     
-    func handleSwipeLeft() {
+   func handleSwipeLeft() {
         if currentLaneIndex > 0 {
             currentLaneIndex -= 1
             moveRunningBunnyToLane(index: currentLaneIndex)
@@ -241,10 +261,12 @@ class GameScene: SCNScene, SCNPhysicsContactDelegate {
         }
     }
     
+    
     func moveRunningBunnyToLane(index: Int) {
-        let action = SCNAction.moveBy(x: CGFloat(lanes[index] - bunnyNode!.position.x), y: 0, z: 0, duration: 0.2)
+        let action = SCNAction.moveBy(x: CGFloat(lanes[index] - bunnyNode!.position.x), y: 0, z: 0, duration: 0.3)
         bunnyNode!.runAction(action)
     }
+    
     
     func playRabbitFallsSound() {
         guard let rabbitFallsSound = SCNAudioSource(fileNamed: "art.scnassets/rabbitFalls.wav") else {
@@ -257,7 +279,7 @@ class GameScene: SCNScene, SCNPhysicsContactDelegate {
         let rabbitFallsAction = SCNAction.playAudio(rabbitFallsSound, waitForCompletion: false)
         rootNode.runAction(rabbitFallsAction)
     }
-    
+   
     func gameOver() {
     
         cameraNode?.removeAllActions()

@@ -18,6 +18,7 @@ import SceneKit
 
 class CarrotNode: SCNNode {
     static var bitMask: Int = 0
+    var identifier: String = UUID().uuidString
     
     override init() {
         super.init()

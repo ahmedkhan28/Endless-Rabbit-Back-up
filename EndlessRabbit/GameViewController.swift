@@ -40,6 +40,7 @@ class GameViewController: UIViewController, GameOverDelegate {
         sceneView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         sceneView.backgroundColor = .clear
         
+        
         // Create and configure the game scene
         gameScene = GameScene()
         gameScene.background.contents = UIImage(named: "art.scnassets/MountainsPixelHd.png")
@@ -55,7 +56,7 @@ class GameViewController: UIViewController, GameOverDelegate {
         playBackgroundSound()
     }
         
-    func setupGestures() {
+    /*func setupGestures() {
         let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeLeft))
         swipeLeft.direction = .left
         sceneView.addGestureRecognizer(swipeLeft)
@@ -71,6 +72,22 @@ class GameViewController: UIViewController, GameOverDelegate {
     
     @objc func handleSwipeRight() {
         gameScene.handleSwipeRight()
+    }*/
+    func setupGestures() {
+        let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
+        sceneView.addGestureRecognizer(panGesture)
+    }
+
+    @objc func handlePanGesture(_ gesture: UIPanGestureRecognizer) {
+        let translation = gesture.translation(in: sceneView)
+        
+        if translation.x > 0 {
+            gameScene.handleSwipeRight()
+        } else if translation.x < 0 {
+            gameScene.handleSwipeLeft()
+        }
+        
+        
     }
     
     override func viewDidLayoutSubviews() {
@@ -100,6 +117,7 @@ class GameViewController: UIViewController, GameOverDelegate {
         sceneView.scene = gameScene
         gameScene.moveCamera()
     }
+   
 
     func gameOverDidOccur() {
         triggerGameOver()
